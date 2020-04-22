@@ -14,21 +14,20 @@ layout(set = 0, binding = 0) buffer Data {
 layout(set = 1, binding = 0) uniform UniformBufferObject {
     vec2 target;
     float delta_time;
+    float target_mass;
 } ubo;
 
 void main() {
-    float gravity = 0.1;
-    float max_vel = 2.0;
+    float particle_mass = 0.01;
 
     uint idx = gl_GlobalInvocationID.x;
+
+    float gravity = (ubo.target_mass * particle_mass) / distance(ubo.target, vertices.data[idx].position);
+
     vec2 delta = normalize(ubo.target - vertices.data[idx].position) * gravity;
 
     vertices.data[idx].velocity += delta;
-
-    if (length(vertices.data[idx].velocity) > max_vel) {
-        vertices.data[idx].velocity /= length(vertices.data[idx].velocity);
-        vertices.data[idx].velocity *= max_vel;
-    }
+    vertices.data[idx].velocity *= 0.999 * (1-ubo.delta_time);
 
     vertices.data[idx].position += vertices.data[idx].velocity * ubo.delta_time;
 }
