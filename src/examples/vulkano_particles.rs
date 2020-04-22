@@ -194,7 +194,8 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let dimensions = surface.window().inner_size();
                     mouse_position = [
-                        (((position.x / dimensions.width as f64) - 0.5) * 2.0) as f32,
+                        (((position.x / dimensions.width as f64) - 0.5) * 2.0 / aspect as f64)
+                            as f32,
                         (((position.y / dimensions.height as f64) - 0.5) * 2.0) as f32,
                     ];
                 }
