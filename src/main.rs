@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use std::sync::Arc;
 
 mod examples;
@@ -11,15 +13,15 @@ use vulkano::instance::{Instance, PhysicalDevice};
 fn main() {
     let (device, queue, instance) = init_vulkan();
 
-    copy_buffers(device.clone(), queue.clone());
-
-    compute_shader_multiply(device.clone(), queue.clone());
-
-    image_clear_and_save(device.clone(), queue.clone());
-
-    compute_mandel_and_save(device.clone(), queue.clone());
-
-    graphics_pipeline(device.clone(), queue.clone());
+    // copy_buffers(device.clone(), queue.clone());
+    //
+    // compute_shader_multiply(device.clone(), queue.clone());
+    //
+    // image_clear_and_save(device.clone(), queue.clone());
+    //
+    // compute_mandel_and_save(device.clone(), queue.clone());
+    //
+    // graphics_pipeline(device.clone(), queue.clone());
 
     // graphics_window(device.clone(), queue.clone(), instance.clone());
 

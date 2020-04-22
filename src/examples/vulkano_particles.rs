@@ -54,7 +54,7 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
 
     let mut particles = Vec::new();
 
-    const PARTICLE_COUNT: u32 = 65_536;
+    const PARTICLE_COUNT: u32 = 1_048_576;
 
     println!("Generating particles");
     for i in 1..PARTICLE_COUNT {
@@ -142,6 +142,9 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
             .unwrap(),
     );
 
+    let vertex_uniform_layout = pipeline.layout().descriptor_set_layout(0).unwrap();
+    let mut vertex_uniform_pool = FixedSizeDescriptorSetsPool::new(vertex_uniform_layout.clone());
+
     let particle_shader =
         cs_particle_physics::Shader::load(device.clone()).expect("failed to load particle_shader");
 
@@ -177,6 +180,9 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
 
     let mut last_time = std::time::Instant::now();
     let mut delta_time: f32 = 0.0;
+    let mut target_mass: f32 = 1.0;
+
+    let mut aspect: f32 = 1.0;
 
     events_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
@@ -185,14 +191,6 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                 winit::event::WindowEvent::CloseRequested => {
                     *control_flow = ControlFlow::Exit;
                 }
-                // winit::event::WindowEvent::KeyboardInput { input, .. } => match input {
-                //     winit::event::KeyboardInput {
-                //         state: winit::event::ElementState::Pressed,
-                //         virtual_keycode: Some(winit::event::VirtualKeyCode::M),
-                //         ..
-                //     } => {}
-                //     _ => (),
-                // },
                 winit::event::WindowEvent::CursorMoved { position, .. } => {
                     let dimensions = surface.window().inner_size();
                     mouse_position = [
@@ -200,12 +198,20 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                         (((position.y / dimensions.height as f64) - 0.5) * 2.0) as f32,
                     ];
                 }
+                winit::event::WindowEvent::MouseWheel { delta, .. } => match delta {
+                    winit::event::MouseScrollDelta::LineDelta(_, dy) => {
+                        target_mass += dy * 0.05;
+                        println!("Mass: {:.2}", target_mass);
+                    }
+                    _ => (),
+                },
                 _ => (),
             },
             winit::event::Event::MainEventsCleared => {
                 let uniform_data = ParticleUBO {
                     target: mouse_position.clone(),
                     delta_time,
+                    target_mass,
                 };
 
                 let particle_uniform_buffer = CpuAccessibleBuffer::from_data(
@@ -259,6 +265,11 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
 
                 if recreate_swapchain {
                     let dimensions: [u32; 2] = surface.window().inner_size().into();
+
+                    aspect = dimensions[1] as f32 / dimensions[0] as f32;
+
+                    println!("New aspect ratio {}", aspect);
+
                     let (new_swapchain, new_images) =
                         match swapchain.recreate_with_dimensions(dimensions) {
                             Ok(r) => r,
@@ -289,6 +300,21 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                     recreate_swapchain = true;
                 }
 
+                let vertex_uniform_buffer = CpuAccessibleBuffer::from_data(
+                    device.clone(),
+                    BufferUsage::uniform_buffer(),
+                    false,
+                    VertexUBO { aspect },
+                )
+                .unwrap();
+
+                let vertex_uniform_set = vertex_uniform_pool
+                    .next()
+                    .add_buffer(vertex_uniform_buffer.clone())
+                    .unwrap()
+                    .build()
+                    .unwrap();
+
                 let command_buffer = AutoCommandBufferBuilder::primary_one_time_submit(
                     device.clone(),
                     queue.family(),
@@ -304,7 +330,7 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                     pipeline.clone(),
                     &dynamic_state,
                     vertex_buffer.clone(),
-                    (),
+                    (vertex_uniform_set),
                     (),
                 )
                 .unwrap()
@@ -389,6 +415,11 @@ vulkano::impl_vertex!(Vertex, position, velocity);
 struct ParticleUBO {
     target: [f32; 2],
     delta_time: f32,
+    target_mass: f32,
+}
+
+struct VertexUBO {
+    aspect: f32,
 }
 
 mod vs_graphics {
