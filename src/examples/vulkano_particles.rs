@@ -218,9 +218,29 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                     }
                     _ => (),
                 },
+                winit::event::WindowEvent::KeyboardInput {
+                    input:
+                        winit::event::KeyboardInput {
+                            state,
+                            virtual_keycode: Some(kc),
+                            ..
+                        },
+                    ..
+                } => match (kc, state) {
+                    (winit::event::VirtualKeyCode::Escape, winit::event::ElementState::Pressed) => {
+                        *control_flow = ControlFlow::Exit;
+                    }
+                    _ => (),
+                },
                 _ => (),
             },
             winit::event::Event::MainEventsCleared => {
+                let time = std::time::Instant::now();
+                let delta_time_instant = time - last_time;
+
+                delta_time = delta_time_instant.as_secs_f32();
+                last_time = time;
+
                 let uniform_data = ParticleUBO {
                     target: mouse_position.clone(),
                     delta_time,
@@ -268,12 +288,6 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                 surface.window().request_redraw();
             }
             winit::event::Event::RedrawRequested(_) => {
-                let time = std::time::Instant::now();
-                let delta_time_instant = time - last_time;
-
-                delta_time = delta_time_instant.as_secs_f32();
-                last_time = time;
-
                 previous_frame_end.as_mut().unwrap().cleanup_finished();
 
                 if recreate_swapchain {
