@@ -18,11 +18,23 @@ use vulkano::sync;
 use vulkano::sync::{FlushError, GpuFuture};
 use vulkano_win::VkSurfaceBuild;
 use winit::event_loop::{ControlFlow, EventLoop};
-use winit::window::{Window, WindowBuilder};
+use winit::window::{Fullscreen, Window, WindowBuilder};
 
 pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Instance>) {
     let events_loop = EventLoop::new();
+
+    // let fullscreen = Fullscreen::Exclusive(
+    //     events_loop
+    //         .primary_monitor()
+    //         .video_modes()
+    //         .next()
+    //         .expect("failed to get video mode for exclusive fullscreen"),
+    // );
+
+    // let fullscreen = Fullscreen::Borderless(events_loop.primary_monitor());
+
     let surface = WindowBuilder::new()
+        // .with_fullscreen(Some(fullscreen))
         .build_vk_surface(&events_loop, instance.clone())
         .unwrap();
 
