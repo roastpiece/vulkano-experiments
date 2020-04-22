@@ -1,5 +1,6 @@
+use rand::Rng;
 use std::sync::Arc;
-use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
+use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer, DeviceLocalBuffer, TypedBufferAccess};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBuffer, DynamicState};
 use vulkano::descriptor::descriptor_set::{FixedSizeDescriptorSetsPool, PersistentDescriptorSet};
 use vulkano::descriptor::PipelineLayoutAbstract;
@@ -51,17 +52,55 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
     )
     .expect("failed to create swapchain");
 
-    let vertex1 = Vertex::new(-0.5, -0.5);
-    let vertex2 = Vertex::new(0.0, 0.5);
-    let vertex3 = Vertex::new(0.5, -0.25);
+    let mut particles = Vec::new();
 
-    let vertex_buffer = CpuAccessibleBuffer::from_iter(
+    const PARTICLE_COUNT: u32 = 65_536;
+
+    println!("Generating particles");
+    for i in 1..PARTICLE_COUNT {
+        particles.push(Vertex::new(
+            rand::thread_rng().gen_range(-1.0, 1.0),
+            rand::thread_rng().gen_range(-1.0, 1.0),
+        ));
+    }
+    println!("Done. Enjoy");
+
+    let cpu_buffer = CpuAccessibleBuffer::from_iter(
         device.clone(),
-        BufferUsage::all(),
+        BufferUsage {
+            transfer_source: true,
+            ..BufferUsage::none()
+        },
         false,
-        vec![vertex1, vertex2, vertex3].into_iter(),
+        particles.into_iter(),
     )
     .unwrap();
+
+    let vertex_buffer = DeviceLocalBuffer::array(
+        device.clone(),
+        cpu_buffer.len(),
+        BufferUsage {
+            transfer_destination: true,
+            vertex_buffer: true,
+            storage_buffer: true,
+            ..BufferUsage::none()
+        },
+        vec![queue.family()],
+    )
+    .unwrap();
+
+    AutoCommandBufferBuilder::new(device.clone(), queue.family())
+        .unwrap()
+        .copy_buffer(cpu_buffer.clone(), vertex_buffer.clone())
+        .unwrap()
+        .build()
+        .unwrap()
+        .execute(queue.clone())
+        .unwrap()
+        .then_signal_fence_and_flush()
+        .unwrap()
+        .wait(None)
+        .unwrap();
 
     let render_pass = Arc::new(
         vulkano::single_pass_renderpass!(device.clone(),
@@ -187,7 +226,7 @@ pub fn graphics_window(device: Arc<Device>, queue: Arc<Queue>, instance: Arc<Ins
                     AutoCommandBufferBuilder::new(device.clone(), queue.family())
                         .unwrap()
                         .dispatch(
-                            [3, 1, 1],
+                            [PARTICLE_COUNT / 1024, 1, 1],
                             particle_compute_pipeline.clone(),
                             (particle_set.clone(), uniform_set),
                             (),
