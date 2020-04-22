@@ -1,17 +1,12 @@
-use rand::Rng;
 use std::sync::Arc;
-use std::time::Instant;
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBuffer, DynamicState};
-use vulkano::descriptor::descriptor_set::{
-    FixedSizeDescriptorSetBuilder, FixedSizeDescriptorSetsPool, PersistentDescriptorSet,
-};
+use vulkano::descriptor::descriptor_set::{FixedSizeDescriptorSetsPool, PersistentDescriptorSet};
 use vulkano::descriptor::PipelineLayoutAbstract;
 use vulkano::device::{Device, Queue};
-use vulkano::format::Format;
 use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass};
 use vulkano::image::SwapchainImage;
-use vulkano::instance::{Instance, PhysicalDevice};
+use vulkano::instance::Instance;
 use vulkano::pipeline::viewport::Viewport;
 use vulkano::pipeline::{ComputePipeline, GraphicsPipeline};
 use vulkano::swapchain::{

@@ -1,19 +1,12 @@
-use rand::Rng;
 use std::sync::Arc;
-use std::time::Instant;
 use vulkano::buffer::{BufferUsage, CpuAccessibleBuffer};
-use vulkano::command_buffer::{AutoCommandBufferBuilder, CommandBuffer, DynamicState};
-use vulkano::descriptor::descriptor_set::{
-    FixedSizeDescriptorSetBuilder, FixedSizeDescriptorSetsPool, PersistentDescriptorSet,
-};
-use vulkano::descriptor::PipelineLayoutAbstract;
+use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState};
 use vulkano::device::{Device, Queue};
-use vulkano::format::Format;
 use vulkano::framebuffer::{Framebuffer, FramebufferAbstract, RenderPassAbstract, Subpass};
 use vulkano::image::SwapchainImage;
-use vulkano::instance::{Instance, PhysicalDevice};
+use vulkano::instance::Instance;
 use vulkano::pipeline::viewport::Viewport;
-use vulkano::pipeline::{ComputePipeline, GraphicsPipeline};
+use vulkano::pipeline::GraphicsPipeline;
 use vulkano::swapchain::{
     self, AcquireError, ColorSpace, FullscreenExclusive, PresentMode, SurfaceTransform, Swapchain,
     SwapchainCreationError,
@@ -262,11 +255,6 @@ impl Vertex {
     }
 }
 vulkano::impl_vertex!(Vertex, position);
-
-struct ParticleUBO {
-    target: [f32; 2],
-    delta_time: f32,
-}
 
 mod vs_graphics {
     vulkano_shaders::shader! {
